@@ -4,7 +4,7 @@ except ImportError:
     raise Exception(
         'Permissions app must be initialized before importing models')
 
-from werkzeug import generate_password_hash, check_password_hash
+from passlib.apps import custom_app_context as pwd_context
 from sqlalchemy.ext.associationproxy import association_proxy
 from .utils import is_sequence
 
@@ -125,6 +125,12 @@ class User(db.Model):
         # doesn't exist.
         elif default_role:
             self.roles = [default_role]
+
+    def hash_password(self, password):
+        self.password = pwd_context.encrypt(password)
+
+    def verify_password(self, password):
+        return pwd_context.verify(password, self.password)
 
     def add_roles(self, *roles):
         self.roles.extend([role for role in roles if role not in self.roles])
