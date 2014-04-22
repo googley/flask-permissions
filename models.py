@@ -88,7 +88,7 @@ class Ability(db.Model):
         return self.name
 
 
-class UserMixin(db.Model):
+class User(db.Model):
 
     """
     Subclass this for your user class
@@ -98,6 +98,10 @@ class UserMixin(db.Model):
     _roles = db.relationship(
         'Role', secondary=user_role_table, backref='users')
     type = db.Column(db.String(50))
+    username = db.Column(db.String(60), unique=True)
+    name = db.Column(db.String(255))
+    email = db.Column(db.String(120), unique=True)
+    password = db.Column(db.String(100))
 
     roles = association_proxy('_roles', 'name', creator=_role_find_or_create)
 
@@ -122,15 +126,6 @@ class UserMixin(db.Model):
         elif default_role:
             self.roles = [default_role]
 
-    def is_authenticated(self):
-        return True
-
-    def is_active(self):
-        return True
-
-    def is_anonymous(self):
-        return False
-
     def add_roles(self, *roles):
         self.roles.extend([role for role in roles if role not in self.roles])
 
@@ -138,7 +133,7 @@ class UserMixin(db.Model):
         self.roles = [role for role in self.roles if role not in roles]
 
     def get_id(self):
-        return unicode(self.id)
+        return str(self.id, 'utf-8')
 
     def __repr__(self):
         return '<User {}>'.format(self.id)

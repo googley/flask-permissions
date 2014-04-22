@@ -4,7 +4,7 @@ from werkzeug.exceptions import Forbidden
 
 def import_user():
     try:
-        from flask.ext.login import current_user
+        from flask_jwt import current_user
         return current_user
     except ImportError:
         raise ImportError(
