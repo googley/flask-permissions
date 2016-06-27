@@ -23,6 +23,10 @@ def _container_find_or_create(c):
         db.session.add(container)
     return container
 
+def _ability_find(a):
+    ability = Ability.query.filter_by(name=a).first()
+    return ability
+
 
 user_role_table = db.Table('fp_user_role',
                            db.Column(
@@ -72,6 +76,7 @@ class Role(db.Model):
 
     def remove_abilities(self, *abilities):
         for ability in abilities:
+            print(ability)
             existing_ability = Ability.query.filter_by(name=ability).first()
             if existing_ability and existing_ability in self.abilities:
                 self.abilities.remove(existing_ability)
@@ -131,43 +136,34 @@ class User(db.Model):
     type = db.Column(db.String(50))
     username = db.Column(db.String(60), unique=True)
     name = db.Column(db.String(255))
-    email = db.Column(db.String(120), unique=True)
+    email = db.Column(db.String(120))
     password = db.Column(db.String(100))
     # 0 = None, 1 = Allow, 2 = Deny ???
     rule = db.Column(db.Integer)
     _containers = db.relationship('Container', secondary=user_container_table, backref='users')
 
+
     roles = association_proxy('_roles', 'name', creator=_role_find_or_create)
     containers = association_proxy('_containers', 'name', creator=_container_find_or_create)
+
+    # _abilities = db.relationship(
+    #     'Ability', secondary=role_ability_table, backref='users')
+    # abilities = association_proxy('_abilities', 'name', creator=_ability_find)
 
     __mapper_args__ = {
         'polymorphic_identity': 'usermixin',
         'polymorphic_on': type
     }
 
-    def __init__(self, containers=None, roles=None, default_role='user', default_container='all'):
+    def __init__(self, name=None, containers=None, roles=None):
+        basestring = str
         # If only a string is passed for roles, convert it to a list containing
         # that string
         if roles and isinstance(roles, basestring):
             roles = [roles]
 
-        # If a sequence is passed for roles (or if roles has been converted to
-        # a sequence), fetch the corresponding database objects and make a list
-        # of those.
-        if roles and is_sequence(roles):
-            self.roles = roles
-        # Otherwise, assign the default 'user' role. Create that role if it
-        # doesn't exist.
-        elif default_role:
-            self.roles = [default_role]
-
-
         if containers and isinstance(containers, basestring):
             containers = [containers]
-        if containers and is_sequence(containers):
-            self.containers = containers
-        elif default_container:
-            self.containers = [default_container]
 
     def hash_password(self, password):
         self.password = pwd_context.encrypt(password)
